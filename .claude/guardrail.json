@@ -1,0 +1,18 @@
+{
+  "//": "Guardrail config read by .claude/hooks/*.ps1. allowedProjectDirs: '.' = this folder only (guard-workdir.ps1). deletableTempDirs / deletableCacheDirNames: the only places Claude may delete files (guard-destructive.ps1); OS temp (%TEMP%) is always deletable.",
+  "allowedProjectDirs": [
+    "."
+  ],
+  "deletableTempDirs": [
+    "Work",
+    "tmp",
+    "temp",
+    ".tmp"
+  ],
+  "deletableCacheDirNames": [
+    "__pycache__",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".ruff_cache"
+  ]
+}

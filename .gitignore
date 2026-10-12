@@ -1,0 +1,17 @@
+# 秘密情報（OpenAI APIキー）。階層を問わず除外する（Code/.env も対象）
+.env
+.env.*
+# 値の入っていないテンプレートだけはコミットする
+!.env.example
+.claude/settings.local.json
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# 音声データ・一時ファイル（サイズが大きく、会議音声を含む）
+Input/
+Work/
+tmp/

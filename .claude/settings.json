@@ -1,0 +1,134 @@
+{
+  "permissions": {
+    "disableBypassPermissionsMode": "disable",
+    "allow": [
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git fetch *)",
+      "Bash(git add *)",
+      "Bash(git branch --show-current)",
+      "Bash(git remote -v)",
+      "Bash(git remote get-url *)",
+      "Bash(gh auth status *)",
+      "Bash(gh repo view *)",
+      "PowerShell(git status *)",
+      "PowerShell(git diff *)",
+      "PowerShell(git log *)",
+      "PowerShell(git show *)",
+      "PowerShell(git fetch *)",
+      "PowerShell(git add *)",
+      "PowerShell(git branch --show-current)",
+      "PowerShell(git remote -v)",
+      "PowerShell(git remote get-url *)",
+      "PowerShell(gh auth status *)",
+      "PowerShell(gh repo view *)"
+    ],
+    "ask": [
+      "Bash(git commit *)",
+      "Bash(git push *)",
+      "Bash(git pull *)",
+      "Bash(git merge *)",
+      "Bash(git rebase *)",
+      "Bash(git reset *)",
+      "Bash(git restore *)",
+      "Bash(git checkout *)",
+      "Bash(git switch *)",
+      "Bash(git stash *)",
+      "Bash(git rm *)",
+      "Bash(git mv *)",
+      "Bash(git tag *)",
+      "Bash(git cherry-pick *)",
+      "Bash(git revert *)",
+      "Bash(git filter-branch *)",
+      "Bash(git branch -*)",
+      "Bash(git remote add *)",
+      "Bash(git remote set-url *)",
+      "Bash(git remote remove *)",
+      "Bash(git remote rename *)",
+      "Bash(git config *)",
+      "Bash(gh repo create *)",
+      "Bash(gh repo edit *)",
+      "Bash(gh pr *)",
+      "Bash(gh release *)",
+      "Bash(pip install *)",
+      "Bash(pip uninstall *)",
+      "Bash(python -m pip *)",
+      "PowerShell(git commit *)",
+      "PowerShell(git push *)",
+      "PowerShell(git pull *)",
+      "PowerShell(git merge *)",
+      "PowerShell(git rebase *)",
+      "PowerShell(git reset *)",
+      "PowerShell(git restore *)",
+      "PowerShell(git checkout *)",
+      "PowerShell(git switch *)",
+      "PowerShell(git stash *)",
+      "PowerShell(git rm *)",
+      "PowerShell(git mv *)",
+      "PowerShell(git tag *)",
+      "PowerShell(git cherry-pick *)",
+      "PowerShell(git revert *)",
+      "PowerShell(git filter-branch *)",
+      "PowerShell(git branch -*)",
+      "PowerShell(git remote add *)",
+      "PowerShell(git remote set-url *)",
+      "PowerShell(git remote remove *)",
+      "PowerShell(git remote rename *)",
+      "PowerShell(git config *)",
+      "PowerShell(gh repo create *)",
+      "PowerShell(gh repo edit *)",
+      "PowerShell(gh pr *)",
+      "PowerShell(gh release *)",
+      "PowerShell(pip install *)",
+      "PowerShell(pip uninstall *)",
+      "PowerShell(python -m pip *)",
+      "PowerShell(Invoke-Expression *)",
+      "Edit(./.claude/settings.json)",
+      "Edit(./.claude/settings.local.json)",
+      "Edit(./.claude/guardrail.json)",
+      "Edit(./.claude/hooks/**)"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(!.env.example)",
+      "Edit(.env)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Edit(./Input/**)",
+      "Edit(./Reference/**)",
+      "Bash(git clean *)",
+      "Bash(gh repo delete *)",
+      "Bash(sudo *)",
+      "PowerShell(git clean *)",
+      "PowerShell(gh repo delete *)",
+      "PowerShell(Format-Volume *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Edit|Write|Glob|Grep|NotebookEdit|Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PROJECT_DIR}\\.claude\\hooks\\guard-workdir.ps1\"",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PROJECT_DIR}\\.claude\\hooks\\guard-destructive.ps1\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

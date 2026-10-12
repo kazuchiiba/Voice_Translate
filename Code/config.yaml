@@ -1,0 +1,34 @@
+# 音声文字起こしアプリ 設定ファイル（DESIGN.md 3-2 参照）
+
+# ASRモデル（DESIGN.md: gpt-4o-transcribe / gpt-4o-mini-transcribe / whisper-1 を比較検証して決定）
+model: gpt-4o-transcribe
+
+# 文字起こし対象の言語（ja固定。自動判定にしたい場合はnullにする）
+language: ja
+
+# 1チャンクの目標長（分）。この長さを超えたら直後の無音区間で切る
+chunk_minutes: 8
+
+# API同時リクエスト数
+max_parallel: 8
+
+# 無音検出パラメータ（ffmpeg silencedetect、チャンク分割用）
+silence_thresh_db: -35
+min_silence_len_sec: 0.7
+
+# チャンク内で話者が変わった可能性があるとみなす無音ポーズの長さ（秒）。
+# ASRがセグメント単位のタイムスタンプを返す場合のみ有効（例: whisper-1）。
+# gpt-4o-transcribe系がタイムスタンプ未対応の場合はこの機能はスキップされる。
+speaker_change_pause_sec: 1.2
+
+# チャンク失敗時の最大リトライ回数
+max_retries: 3
+
+# リトライ時の待機秒数の基準値（指数バックオフ: base_backoff_sec * 2^attempt）
+base_backoff_sec: 2
+
+# 1チャンクあたりのAPIタイムアウト秒数
+request_timeout_sec: 120
+
+# 処理完了後、Work内の中間ファイルを削除するか
+cleanup_work_files: true
