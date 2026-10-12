@@ -11,7 +11,13 @@ __pycache__/
 *.pyc
 .pytest_cache/
 
-# 音声データ・一時ファイル（サイズが大きく、会議音声を含む）
-Input/
-Work/
+# データフォルダ（フォルダ構成だけ残し、中身はコミットしない）
+Input/*
+!Input/.gitkeep
+Work/*
+!Work/.gitkeep
 tmp/
+Output/*
+!Output/.gitkeep
+Reference/*
+!Reference/.gitkeep
