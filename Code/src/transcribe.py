@@ -3,10 +3,11 @@
 temperature=0 の確定的出力のみを使用し、プロンプトによる文脈補正は行わない
 （「推論させない」原則。DESIGN.md 3章）。
 
-話者変更に伴う改行（DESIGN.md 3章）は、ASRが返すセグメント単位のタイムスタンプ
-（verbose_json）のギャップでのみ判定する。モデルがverbose_jsonに対応していない
-場合は、この機能を無効化し、プレーンテキストのまま出力する（テキスト内容自体の
-推論・言い換えは一切行わない）。
+話者変更に伴う改行（DESIGN.md 3章）は、whisper-1のセグメントタイムスタンプ自体には
+頼らない（実際の無音とは無関係に機械的に区切られており、ギャップが常に0のため使えないことが
+実機検証で判明：ISSUE.md参照）。代わりに、チャンク音声に対して独自にffmpegの無音検出
+（ffmpeg_utils.detect_silences）を行い、検出した無音区間の直後に来るセグメントの境界で
+改行を挿入する。無音の「検出」は音声信号の機械的な処理であり、テキスト内容の解釈・推論は行わない。
 """
 
 from __future__ import annotations
@@ -18,6 +19,7 @@ from pathlib import Path
 
 from openai import OpenAI
 
+from . import ffmpeg_utils
 from .chunking import ChunkSpan
 
 
@@ -48,19 +50,27 @@ def probe_verbose_json_support(
         return False
 
 
-def _segments_to_text(segments, pause_threshold_sec: float) -> str:
-    """セグメント間のギャップ（無音ポーズ）が閾値以上なら改行2つを挿入する。
-    テキスト内容そのものには一切手を加えない。"""
+def _find_break_segment_indices(segments, silences: list[tuple[float, float]]) -> set[int]:
+    """検出した無音区間ごとに、その終了直後に始まる最初のセグメントのインデックスを「改行位置」とする。"""
+    break_indices: set[int] = set()
+    for _silence_start, silence_end in silences:
+        for i, seg in enumerate(segments):
+            start = seg.start if hasattr(seg, "start") else seg["start"]
+            if start >= silence_end:
+                break_indices.add(i)
+                break
+    return break_indices
+
+
+def _segments_to_text(segments, break_indices: set[int]) -> str:
+    """セグメント文字列をそのまま連結する。改行位置として特定されたセグメントの直前にのみ
+    改行を挿入する。テキスト内容そのものには一切手を加えない。"""
     parts: list[str] = []
-    prev_end: float | None = None
-    for seg in segments:
+    for i, seg in enumerate(segments):
         text = seg.text if hasattr(seg, "text") else seg["text"]
-        start = seg.start if hasattr(seg, "start") else seg["start"]
-        end = seg.end if hasattr(seg, "end") else seg["end"]
-        if prev_end is not None and (start - prev_end) >= pause_threshold_sec:
+        if i in break_indices and i != 0:
             parts.append("\n")
         parts.append(text)
-        prev_end = end
     return "".join(parts).strip()
 
 
@@ -71,7 +81,8 @@ def _transcribe_one(
     chunk_path: Path,
     timeout_sec: float,
     use_verbose_json: bool,
-    pause_threshold_sec: float,
+    silence_thresh_db: float,
+    min_silence_sec: float,
 ) -> str:
     with open(chunk_path, "rb") as f:
         kwargs = dict(
@@ -87,7 +98,9 @@ def _transcribe_one(
     if use_verbose_json:
         segments = getattr(response, "segments", None)
         if segments:
-            return _segments_to_text(segments, pause_threshold_sec)
+            silences = ffmpeg_utils.detect_silences(chunk_path, silence_thresh_db, min_silence_sec)
+            break_indices = _find_break_segment_indices(segments, silences)
+            return _segments_to_text(segments, break_indices)
         return getattr(response, "text", str(response))
     return response if isinstance(response, str) else getattr(response, "text", str(response))
 
@@ -102,14 +115,15 @@ def transcribe_chunk_with_retry(
     base_backoff_sec: float,
     timeout_sec: float,
     use_verbose_json: bool,
-    pause_threshold_sec: float,
+    silence_thresh_db: float,
+    min_silence_sec: float,
 ) -> ChunkResult:
     last_error: str | None = None
     for attempt in range(max_retries + 1):
         try:
             text = _transcribe_one(
                 client, model, language, chunk_path, timeout_sec,
-                use_verbose_json, pause_threshold_sec,
+                use_verbose_json, silence_thresh_db, min_silence_sec,
             )
             return ChunkResult(span=span, text=text, retries_used=attempt)
         except Exception as e:  # noqa: BLE001 - APIエラー種別を問わずリトライ対象とする
@@ -128,7 +142,8 @@ def transcribe_chunks(
     max_retries: int,
     base_backoff_sec: float,
     timeout_sec: float,
-    pause_threshold_sec: float,
+    silence_thresh_db: float,
+    min_silence_sec: float,
 ) -> list[ChunkResult]:
     client = OpenAI(api_key=api_key)
 
@@ -144,7 +159,7 @@ def transcribe_chunks(
                 transcribe_chunk_with_retry,
                 client, model, language, span, chunk_path,
                 max_retries, base_backoff_sec, timeout_sec,
-                use_verbose_json, pause_threshold_sec,
+                use_verbose_json, silence_thresh_db, min_silence_sec,
             ): span.index
             for span, chunk_path in chunks
         }

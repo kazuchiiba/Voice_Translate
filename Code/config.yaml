@@ -1,7 +1,7 @@
 # 音声文字起こしアプリ 設定ファイル（DESIGN.md 3-2 参照）
 
-# ASRモデル（DESIGN.md: gpt-4o-transcribe / gpt-4o-mini-transcribe / whisper-1 を比較検証して決定）
-model: gpt-4o-transcribe
+# ASRモデル（DESIGN.md 3-2: 比較検証の結果 whisper-1 に決定。2026-10-12）
+model: whisper-1
 
 # 文字起こし対象の言語（ja固定。自動判定にしたい場合はnullにする）
 language: ja
@@ -16,10 +16,11 @@ max_parallel: 8
 silence_thresh_db: -35
 min_silence_len_sec: 0.7
 
-# チャンク内で話者が変わった可能性があるとみなす無音ポーズの長さ（秒）。
+# チャンク内で改行を入れる無音ポーズとみなす最短長（秒）。
+# whisper-1のセグメントタイムスタンプ自体は実際の無音と無関係（常にギャップ0）なため、
+# ffmpegで検出した実際の無音区間をセグメント境界に突き合わせて改行位置を決める。
 # ASRがセグメント単位のタイムスタンプを返す場合のみ有効（例: whisper-1）。
-# gpt-4o-transcribe系がタイムスタンプ未対応の場合はこの機能はスキップされる。
-speaker_change_pause_sec: 1.2
+speaker_change_min_silence_sec: 0.5
 
 # チャンク失敗時の最大リトライ回数
 max_retries: 3

@@ -6,7 +6,11 @@
 
 from __future__ import annotations
 
+import re
+
 from .transcribe import ChunkResult
+
+_TIMESTAMP_HEADER_RE = re.compile(r"^\[[\d:]+ - [\d:]+\]$")
 
 
 def format_timestamp(seconds: float) -> str:
@@ -29,3 +33,16 @@ def merge_results(results: list[ChunkResult]) -> str:
         else:
             blocks.append(f"{header}\n[文字起こし失敗: {r.error}]")
     return "\n\n".join(blocks) + "\n"
+
+
+def extract_body_paragraphs(transcript_text: str) -> list[str]:
+    """タイムスタンプ行を除いた本文のみを段落のリストとして返す（Word出力用）。
+    チャンク内の話者変更改行（merge前のsegments区切り）もそれぞれ別段落として扱う。
+    """
+    paragraphs: list[str] = []
+    for line in transcript_text.splitlines():
+        line = line.strip()
+        if not line or _TIMESTAMP_HEADER_RE.match(line):
+            continue
+        paragraphs.append(line)
+    return paragraphs

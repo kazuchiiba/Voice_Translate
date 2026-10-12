@@ -27,7 +27,7 @@ class Settings:
     max_parallel: int
     silence_thresh_db: float
     min_silence_len_sec: float
-    speaker_change_pause_sec: float
+    speaker_change_min_silence_sec: float
     max_retries: int
     base_backoff_sec: float
     request_timeout_sec: float
@@ -57,7 +57,7 @@ def load_settings(config_path: Path | None = None) -> Settings:
         max_parallel=int(raw["max_parallel"]),
         silence_thresh_db=float(raw["silence_thresh_db"]),
         min_silence_len_sec=float(raw["min_silence_len_sec"]),
-        speaker_change_pause_sec=float(raw["speaker_change_pause_sec"]),
+        speaker_change_min_silence_sec=float(raw["speaker_change_min_silence_sec"]),
         max_retries=int(raw["max_retries"]),
         base_backoff_sec=float(raw["base_backoff_sec"]),
         request_timeout_sec=float(raw["request_timeout_sec"]),

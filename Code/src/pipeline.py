@@ -6,7 +6,7 @@ import shutil
 import time
 from pathlib import Path
 
-from . import check_report, output, validate
+from . import check_report, docx_output, output, validate
 from .chunking import split_into_chunks
 from .config import OUTPUT_DIR, REFERENCE_DIR, WORK_DIR, Settings
 from .merge import merge_results
@@ -45,7 +45,8 @@ def process_file(input_path: Path, settings: Settings) -> None:
         max_retries=settings.max_retries,
         base_backoff_sec=settings.base_backoff_sec,
         timeout_sec=settings.request_timeout_sec,
-        pause_threshold_sec=settings.speaker_change_pause_sec,
+        silence_thresh_db=settings.silence_thresh_db,
+        min_silence_sec=settings.speaker_change_min_silence_sec,
     )
 
     failed = [r for r in results if r.text is None]
@@ -56,8 +57,10 @@ def process_file(input_path: Path, settings: Settings) -> None:
 
     txt_path = output.write_transcript(OUTPUT_DIR, name, transcript_text)
     json_path = output.write_segments_json(OUTPUT_DIR, name, results)
+    docx_path = docx_output.write_docx(OUTPUT_DIR, name, transcript_text)
     print(f"[{name}] 出力: {txt_path}")
     print(f"[{name}] 出力: {json_path}")
+    print(f"[{name}] 出力: {docx_path}")
 
     report_path = check_report.write_check_report_if_reference_exists(
         REFERENCE_DIR, OUTPUT_DIR, name, transcript_text
