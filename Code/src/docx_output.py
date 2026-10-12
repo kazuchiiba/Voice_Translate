@@ -132,6 +132,49 @@ def _set_bullet_level(paragraph, num_id: int, ilvl: int) -> None:
     ppr.append(numpr)
 
 
+def _add_field_run(paragraph, field_code: str, cached_text: str) -> None:
+    """PAGE / NUMPAGES 等のWordフィールドを段落に追加する（ページ数に応じて自動更新される）。"""
+    run_begin = paragraph.add_run()
+    fld_begin = OxmlElement("w:fldChar")
+    fld_begin.set(qn("w:fldCharType"), "begin")
+    run_begin._r.append(fld_begin)
+
+    run_instr = paragraph.add_run()
+    instr = OxmlElement("w:instrText")
+    instr.set(qn("xml:space"), "preserve")
+    instr.text = f" {field_code} "
+    run_instr._r.append(instr)
+
+    run_sep = paragraph.add_run()
+    fld_sep = OxmlElement("w:fldChar")
+    fld_sep.set(qn("w:fldCharType"), "separate")
+    run_sep._r.append(fld_sep)
+
+    run_cached = paragraph.add_run(cached_text)
+    _set_run_font(run_cached)
+
+    run_end = paragraph.add_run()
+    fld_end = OxmlElement("w:fldChar")
+    fld_end.set(qn("w:fldCharType"), "end")
+    run_end._r.append(fld_end)
+
+
+def _add_page_number_footer(doc: Document) -> None:
+    """右下に「P{現在ページ}/{総ページ数}」を表示するフッターを追加する（Sampleのfooter1.xmlを再現）。"""
+    footer = doc.sections[0].footer
+    footer.is_linked_to_previous = False
+    paragraph = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
+    paragraph.text = ""
+    paragraph.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+
+    run_p = paragraph.add_run("P")
+    _set_run_font(run_p)
+    _add_field_run(paragraph, "PAGE", "1")
+    run_slash = paragraph.add_run("/")
+    _set_run_font(run_slash)
+    _add_field_run(paragraph, "NUMPAGES", "1")
+
+
 def _set_run_font(run, bold: bool = False) -> None:
     run.font.name = FONT_NAME
     run.font.size = Pt(BODY_SIZE_PT)
@@ -185,6 +228,8 @@ def build_document(title: str, body_paragraphs: list[str]) -> Document:
     normal.paragraph_format.space_before = Pt(0)
     normal.paragraph_format.space_after = Pt(0)
     normal.paragraph_format.line_spacing = 1.0
+
+    _add_page_number_footer(doc)
 
     table = doc.add_table(rows=5, cols=2)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
