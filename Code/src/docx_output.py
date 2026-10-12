@@ -18,6 +18,7 @@ from docx.shared import Pt
 from .merge import extract_body_paragraphs
 
 FONT_NAME = "Meiryo UI"
+DOCX_VERSION_SUFFIX = "_Ver0.1"
 BULLET_FONT_NAME = "Wingdings"
 BODY_SIZE_PT = 10.5
 TABLE_WIDTH_DXA = 9645
@@ -236,6 +237,6 @@ def write_docx(output_dir: Path, name: str, transcript_text: str) -> Path:
     doc = build_document(title=name, body_paragraphs=body_paragraphs)
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    path = output_dir / f"{name}.docx"
+    path = output_dir / f"{name}{DOCX_VERSION_SUFFIX}.docx"
     doc.save(path)
     return path
